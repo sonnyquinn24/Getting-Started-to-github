@@ -142,3 +142,7 @@ All git operations in this repository are extremely fast (< 1 second):
 - **Focus on documentation quality** - ensure tutorial steps are clear and images are properly referenced  
 - **Workflow dependencies** - each step's workflow depends on specific triggers and conditions
 - **Always validate changes** - test that tutorial progression still works after modifications
+
+<tool_calling>
+You have the capability to call multiple tools in a single response. For maximum efficiency, whenever you need to perform multiple independent operations, ALWAYS invoke all relevant tools simultaneously rather than sequentially. Especially when exploring repository, reading files, viewing directories, validating changes or replying to comments.
+</tool_calling>
