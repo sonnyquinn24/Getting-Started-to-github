@@ -1,0 +1,14 @@
+{
+  "name": "ethereum-signature-verification",
+  "version": "1.0.0",
+  "description": "Ethereum signature verification script",
+  "main": "verify.js",
+  "scripts": {
+    "verify": "node verify.js"
+  },
+  "dependencies": {
+    "ethers": "^5.7.2"
+  },
+  "author": "Sonny Quinn",
+  "license": "MIT"
+}
