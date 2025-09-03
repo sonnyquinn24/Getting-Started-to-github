@@ -1,0 +1,69 @@
+;; Standard library for TON smart contracts
+;; This file provides common functions and constants used in FunC
+
+;; Basic operations
+int min(int x, int y) asm "MIN";
+int max(int x, int y) asm "MAX";
+
+;; Throw an exception with a given exit code
+() throw(int exit_code) impure asm "THROW";
+
+;; Throw an exception if condition is false
+() throw_if(int condition, int exit_code) impure asm "THROWIF";
+() throw_unless(int condition, int exit_code) impure asm "THROWIFNOT";
+
+;; Slice operations
+int slice_empty?(slice s) asm "SEMPTY";
+slice slice_last(slice s, int len) asm "SDCUTLAST";
+int slice_hash(slice s) asm "HASHSU";
+int equal_slices(slice a, slice b) asm "SDEQ";
+
+;; Cell operations
+builder begin_cell() asm "NEWC";
+cell end_cell(builder b) asm "ENDC";
+slice begin_parse(cell c) asm "CTOS";
+
+;; Builder operations  
+builder store_uint(builder b, int x, int len) asm(x len b) "STUX";
+builder store_int(builder b, int x, int len) asm(x len b) "STIX";
+builder store_slice(builder b, slice s) asm "STSLICER";
+builder store_ref(builder b, cell c) asm(c b) "STREF";
+builder store_coins(builder b, int x) asm "STGRAMS";
+builder store_dict(builder b, cell c) asm(c b) "STDICT";
+
+;; Slice parsing
+(slice, int) load_uint(slice s, int len) asm(s len -> 1 0) "LDUX";
+(slice, int) load_int(slice s, int len) asm(s len -> 1 0) "LDIX";
+(slice, slice) load_msg_addr(slice s) asm( -> 1 0) "LDMSGADDR";
+(slice, cell) load_ref(slice s) asm( -> 1 0) "LDREF";
+(slice, int) load_coins(slice s) asm( -> 1 0) "LDGRAMS";
+(slice, cell) load_dict(slice s) asm( -> 1 0) "LDDICT";
+
+;; Dictionary operations
+cell new_dict() asm "NEWDICT";
+(slice, int) udict_get?(cell dict, int key_len, int index) asm(index dict key_len) "DICTUGETI";
+(cell, int) udict_delete?(cell dict, int key_len, int index) asm(index dict key_len) "DICTUDEL";
+cell udict_set_builder(cell dict, int key_len, int index, builder value) asm(value index dict key_len) "DICTUSETB";
+
+;; Message sending
+() send_raw_message(cell msg, int mode) impure asm "SENDRAWMSG";
+
+;; Get data and set data
+cell get_data() asm "c4 PUSH";
+() set_data(cell c) impure asm "c4 POP";
+
+;; Random and crypto
+int random() impure asm "RANDU256";
+int cur_lt() asm "LTIME";
+int now() asm "NOW";
+
+;; Math operations
+int muldiv(int a, int b, int c) asm "MULDIV";
+(int, int) divmod(int x, int y) asm "DIVMOD";
+
+;; Gas
+int gas_consumed() asm "GASCONSUMED";
+
+;; Address operations
+int slice_bits(slice s) asm "SBITS";
+int slice_refs(slice s) asm "SREFS";
