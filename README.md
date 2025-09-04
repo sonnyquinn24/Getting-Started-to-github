@@ -1,22 +1,17 @@
-# 👋 Hi there! Welcome to the official Github of Sonny Ethan Quinn [SEQ] Toncoin 
+### Tool Calling
 
-I'm **[Sonny]**, and I'm passionate about music, learning, and living life by the hustle 
-Whether you're here to check out my latest work, collaborate, or just say hello—I'm glad you stopped by!
+Tool calling refers to the process of invoking specific functions or methods within a programming or scripting context. It allows developers to execute predefined operations, which can range from manipulating data to interacting with user interfaces. The clarity in tool calling is essential for ensuring that the intended operations are executed correctly and efficiently.
 
----
+For example:
 
-## 🚀 About Me
+```javascript
+// Example of calling a function
+function add(a, b) {
+    return a + b;
+}
 
-- 🔭 Currently working on: _[SEQ & SEQ2]_
+const result = add(5, 3); // Calling the add function
+console.log(result); // Output will be 8
+```
 
----
-
-## 📈 GitHub Stats
-
-![GitHub Stats](https://github-readme-stats.vercel.app/api?username=sonnyquinn24&show_icons=true&hide_title=true&theme=default)
-
-> "_Code is like humor. When you have to explain it, it's bad._" – Cory House
-
----
-
-Thanks for visiting! ⭐️
+This example demonstrates how a simple function can be called to perform an operation, illustrating the concept of tool calling in programming.
