@@ -224,8 +224,7 @@ int is_owner(slice sender_address, slice owner_address) inline {
         return ();
     }
     
-    ;; Owner withdraw contract balance
-    if (op == OP_WITHDRAW & is_owner(sender_address, owner_address)) {
+    if (op == OP_WITHDRAW && is_owner(sender_address, owner_address)) {
         int withdraw_amount = in_msg_body~load_uint(64);
         
         if (withdraw_amount == 0) {
