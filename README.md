@@ -1,11 +1,15 @@
-# 👋 Hi there! Welcome to the official Github of Sonny Ethan Quinn [SEQ] Toncoin 
+### Tool Calling
 
-I'm **[Sonny]**, and I'm passionate about music, learning, and living life by the hustle 
-Whether you're here to check out my latest work, collaborate, or just say hello—I'm glad you stopped by!
+Tool calling refers to the process of invoking specific functions or methods within a programming or scripting context. It allows developers to execute predefined operations, which can range from manipulating data to interacting with user interfaces. The clarity in tool calling is essential for ensuring that the intended operations are executed correctly and efficiently.
 
----
+For example:
 
-## 🚀 About Me
+```javascript
+// Example of calling a function
+function add(a, b) {
+    return a + b;
+}
+
 
 - 🔭 Currently working on: _[SEQ & SEQ2 Token Smart Contracts]_
 - 🎯 Focus: TON Blockchain development and tokenomics
@@ -41,14 +45,11 @@ npm run deploy-ton
 
 ### 📚 Documentation
 - [📖 Complete SEQ2 Token Documentation](SEQ2-TOKEN-README.md)
-- [🔧 Smart Contract Code](contracts/seq2-token.fc)
-- [⚙️ Build Scripts](scripts/)
+s/)
 
 ---
 
-## 🔐 Ethereum Signature Verification
 
-This repository also includes Ethereum signature verification functionality:
 
 ```bash
 # Run signature verification
@@ -82,3 +83,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ---
 
 Thanks for visiting! ⭐️ Don't forget to check out the [SEQ2 Token documentation](SEQ2-TOKEN-README.md)!
+=======
+const result = add(5, 3); // Calling the add function
+console.log(result); // Output will be 8
+```
+
+This example demonstrates how a simple function can be called to perform an operation, illustrating the concept of tool calling in programming.
