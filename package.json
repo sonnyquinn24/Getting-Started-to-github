@@ -1,14 +1,18 @@
 {
-  "name": "ethereum-signature-verification",
+  "name": "seq2-token-project",
   "version": "1.0.0",
-  "description": "Ethereum signature verification script",
+  "description": "SEQ2 Token Smart Contract for TON Blockchain with Ethereum signature verification",
   "main": "verify.js",
   "scripts": {
-    "verify": "node verify.js"
+    "verify": "node verify.js",
+    "compile-ton": "node scripts/compile.js",
+    "test-ton": "node scripts/test.js",
+    "deploy-ton": "node scripts/deploy.js"
   },
   "dependencies": {
     "ethers": "^5.7.2"
   },
+  "devDependencies": {},
   "author": "Sonny Quinn",
   "license": "MIT"
 }

@@ -40,3 +40,33 @@ Thumbs.db
 ########################
 node_modules/
 package-lock.json
+
+# TON Smart Contract Build Artifacts #
+######################################
+build/
+dist/
+*.fif
+*.boc
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# TON development files
+*.addr
+*.pk
+*.wallet
+
+# Temporary files
+tmp/
+temp/
