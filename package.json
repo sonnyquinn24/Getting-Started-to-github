@@ -9,6 +9,9 @@
   "dependencies": {
     "ethers": "^5.7.2"
   },
+  "devDependencies": {
+    "gulp": "^4.0.2"
+  },
   "author": "Sonny Quinn",
   "license": "MIT"
 }
