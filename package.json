@@ -7,10 +7,12 @@
     "verify": "node verify.js"
   },
   "dependencies": {
-    "ethers": "^5.7.2"
+    "ethers": "^6.15.0",
+    "express": "^5.1.0",
+    "lodash": "^4.17.21"
   },
   "devDependencies": {
-    "gulp": "^4.0.2"
+    "gulp": "^5.0.1"
   },
   "author": "Sonny Quinn",
   "license": "MIT"
