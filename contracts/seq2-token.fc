@@ -161,8 +161,7 @@ int is_owner(slice sender_address, slice owner_address) inline {
     if (op == OP_DEPOSIT) {
         throw_unless(ERROR_INVALID_AMOUNT, msg_value > 0);
         
-        ;; Calculate tokens to mint based on current price
-        int tokens_to_mint = (msg_value * NANOTONS_PER_TON) / price_nanoton;
+        int tokens_to_mint = msg_value / price_nanoton;
         throw_unless(ERROR_INVALID_AMOUNT, tokens_to_mint > 0);
         
         int current_balance = get_balance(balances, sender_address);
