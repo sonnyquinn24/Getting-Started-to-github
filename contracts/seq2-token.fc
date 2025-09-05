@@ -1,0 +1,296 @@
+;; SEQ2 Token Smart Contract for TON Blockchain
+;; Initial price: $1.50 per SEQ2 token
+;; Supports standard token operations with price management
+
+#include "imports/stdlib.fc";
+
+;; Storage layout
+;; storage:
+;;   total_supply: uint64 - total tokens in circulation
+;;   owner_address: MsgAddress - contract owner address
+;;   price_nanoton: uint64 - current price in nanotons (1 TON = 10^9 nanotons)
+;;   oracle_address: MsgAddress - price oracle address (optional)
+;;   balances: dict(MsgAddress -> uint64) - user balances
+;;   freeze_admin: int - admin can freeze transfers (0=false, 1=true)
+
+const int INITIAL_PRICE_USD = 150; ;; $1.50 in cents
+const int TON_USD_RATE = 200; ;; Assume 1 TON = $2.00 (can be updated by oracle)
+const int NANOTONS_PER_TON = 1000000000; ;; 10^9
+
+;; Error codes
+const int ERROR_NOT_OWNER = 401;
+const int ERROR_INSUFFICIENT_BALANCE = 402;
+const int ERROR_INSUFFICIENT_FUNDS = 403;
+const int ERROR_INVALID_ADDRESS = 404;
+const int ERROR_TRANSFERS_FROZEN = 405;
+const int ERROR_INVALID_AMOUNT = 406;
+
+;; Operation codes
+const int OP_MINT = 1;
+const int OP_TRANSFER = 2;
+const int OP_DEPOSIT = 3;
+const int OP_WITHDRAW = 4;
+const int OP_UPDATE_PRICE = 5;
+const int OP_FREEZE_TRANSFERS = 6;
+const int OP_GET_BALANCE = 7;
+
+;; Storage functions
+(int, slice, int, slice, cell, int) load_data() inline {
+    slice ds = get_data().begin_parse();
+    int total_supply = ds~load_uint(64);
+    slice owner_address = ds~load_msg_addr();
+    int price_nanoton = ds~load_uint(64);
+    slice oracle_address = ds~load_msg_addr();
+    cell balances = ds~load_dict();
+    int freeze_admin = ds~load_uint(1);
+    return (total_supply, owner_address, price_nanoton, oracle_address, balances, freeze_admin);
+}
+
+() save_data(int total_supply, slice owner_address, int price_nanoton, slice oracle_address, cell balances, int freeze_admin) impure inline {
+    begin_cell()
+        .store_uint(total_supply, 64)
+        .store_slice(owner_address)
+        .store_uint(price_nanoton, 64)
+        .store_slice(oracle_address)
+        .store_dict(balances)
+        .store_uint(freeze_admin, 1)
+        .end_cell()
+        .set_data();
+}
+
+;; Calculate initial price in nanotons
+int calculate_initial_price() inline {
+    ;; $1.50 at $2.00 per TON = 0.75 TON = 750,000,000 nanotons
+    return (INITIAL_PRICE_USD * NANOTONS_PER_TON) / TON_USD_RATE;
+}
+
+;; Get user balance from dictionary
+int get_balance(cell balances, slice user_address) inline {
+    (slice value, int found) = balances.udict_get?(267, user_address.slice_hash());
+    if (found) {
+        return value~load_uint(64);
+    }
+    return 0;
+}
+
+;; Set user balance in dictionary
+cell set_balance(cell balances, slice user_address, int amount) inline {
+    if (amount == 0) {
+        return balances.udict_delete?(267, user_address.slice_hash());
+    }
+    return balances.udict_set_builder(267, user_address.slice_hash(), 
+        begin_cell().store_uint(amount, 64));
+}
+
+;; Check if sender is owner
+int is_owner(slice sender_address, slice owner_address) inline {
+    return equal_slices(sender_address, owner_address);
+}
+
+;; Initialize contract
+() recv_internal(int my_balance, int msg_value, cell in_msg_full, slice in_msg_body) impure {
+    if (in_msg_body.slice_empty?()) { ;; ignore empty messages
+        return ();
+    }
+    
+    slice cs = in_msg_full.begin_parse();
+    int flags = cs~load_uint(4);
+    
+    if (flags & 1) { ;; ignore all bounced messages
+        return ();
+    }
+    
+    slice sender_address = cs~load_msg_addr();
+    
+    ;; Load current state
+    (int total_supply, slice owner_address, int price_nanoton, slice oracle_address, cell balances, int freeze_admin) = load_data();
+    
+    ;; If this is initial deployment, set up contract
+    if (total_supply == 0) {
+        price_nanoton = calculate_initial_price();
+        owner_address = sender_address;
+        oracle_address = sender_address; ;; Initially, owner is also oracle
+        balances = new_dict();
+        freeze_admin = 0;
+        save_data(0, owner_address, price_nanoton, oracle_address, balances, freeze_admin);
+        return ();
+    }
+    
+    int op = in_msg_body~load_uint(32);
+    int query_id = in_msg_body~load_uint(64);
+    
+    ;; Mint tokens (owner only)
+    if (op == OP_MINT) {
+        throw_unless(ERROR_NOT_OWNER, is_owner(sender_address, owner_address));
+        
+        slice to_address = in_msg_body~load_msg_addr();
+        int amount = in_msg_body~load_uint(64);
+        
+        throw_unless(ERROR_INVALID_AMOUNT, amount > 0);
+        
+        int current_balance = get_balance(balances, to_address);
+        balances = set_balance(balances, to_address, current_balance + amount);
+        total_supply += amount;
+        
+        save_data(total_supply, owner_address, price_nanoton, oracle_address, balances, freeze_admin);
+        return ();
+    }
+    
+    ;; Transfer tokens
+    if (op == OP_TRANSFER) {
+        throw_unless(ERROR_TRANSFERS_FROZEN, freeze_admin == 0);
+        
+        slice to_address = in_msg_body~load_msg_addr();
+        int amount = in_msg_body~load_uint(64);
+        
+        throw_unless(ERROR_INVALID_AMOUNT, amount > 0);
+        
+        int sender_balance = get_balance(balances, sender_address);
+        throw_unless(ERROR_INSUFFICIENT_BALANCE, sender_balance >= amount);
+        
+        int to_balance = get_balance(balances, to_address);
+        
+        balances = set_balance(balances, sender_address, sender_balance - amount);
+        balances = set_balance(balances, to_address, to_balance + amount);
+        
+        save_data(total_supply, owner_address, price_nanoton, oracle_address, balances, freeze_admin);
+        return ();
+    }
+    
+    ;; Deposit TON to buy tokens
+    if (op == OP_DEPOSIT) {
+        throw_unless(ERROR_INVALID_AMOUNT, msg_value > 0);
+        
+        int tokens_to_mint = msg_value / price_nanoton;
+        throw_unless(ERROR_INVALID_AMOUNT, tokens_to_mint > 0);
+        
+        int current_balance = get_balance(balances, sender_address);
+        balances = set_balance(balances, sender_address, current_balance + tokens_to_mint);
+        total_supply += tokens_to_mint;
+        
+        save_data(total_supply, owner_address, price_nanoton, oracle_address, balances, freeze_admin);
+        return ();
+    }
+    
+    ;; Withdraw TON (burn tokens)
+    if (op == OP_WITHDRAW) {
+        int token_amount = in_msg_body~load_uint(64);
+        
+        throw_unless(ERROR_INVALID_AMOUNT, token_amount > 0);
+        
+        int sender_balance = get_balance(balances, sender_address);
+        throw_unless(ERROR_INSUFFICIENT_BALANCE, sender_balance >= token_amount);
+        
+        ;; Calculate TON to return
+        int ton_to_return = (token_amount * price_nanoton) / NANOTONS_PER_TON;
+        throw_unless(ERROR_INSUFFICIENT_FUNDS, my_balance >= ton_to_return + 100000000); ;; Keep 0.1 TON for gas
+        
+        balances = set_balance(balances, sender_address, sender_balance - token_amount);
+        total_supply -= token_amount;
+        
+        ;; Send TON back to user
+        var msg = begin_cell()
+            .store_uint(0x10, 6) ;; int_msg_info tag
+            .store_slice(sender_address)
+            .store_coins(ton_to_return)
+            .store_uint(0, 1 + 4 + 4 + 64 + 32 + 1 + 1);
+        send_raw_message(msg.end_cell(), 1);
+        
+        save_data(total_supply, owner_address, price_nanoton, oracle_address, balances, freeze_admin);
+        return ();
+    }
+    
+    ;; Update price (owner/oracle only)
+    if (op == OP_UPDATE_PRICE) {
+        throw_unless(ERROR_NOT_OWNER, 
+            is_owner(sender_address, owner_address) | is_owner(sender_address, oracle_address));
+        
+        int new_price = in_msg_body~load_uint(64);
+        throw_unless(ERROR_INVALID_AMOUNT, new_price > 0);
+        
+        price_nanoton = new_price;
+        save_data(total_supply, owner_address, price_nanoton, oracle_address, balances, freeze_admin);
+        return ();
+    }
+    
+    ;; Freeze/unfreeze transfers (owner only)
+    if (op == OP_FREEZE_TRANSFERS) {
+        throw_unless(ERROR_NOT_OWNER, is_owner(sender_address, owner_address));
+        
+        int freeze_status = in_msg_body~load_uint(1);
+        freeze_admin = freeze_status;
+        
+        save_data(total_supply, owner_address, price_nanoton, oracle_address, balances, freeze_admin);
+        return ();
+    }
+    
+    if (op == OP_WITHDRAW && is_owner(sender_address, owner_address)) {
+        int withdraw_amount = in_msg_body~load_uint(64);
+        
+        if (withdraw_amount == 0) {
+            withdraw_amount = my_balance - 100000000; ;; Leave 0.1 TON for gas
+        }
+        
+        throw_unless(ERROR_INSUFFICIENT_FUNDS, my_balance >= withdraw_amount + 100000000);
+        
+        var msg = begin_cell()
+            .store_uint(0x10, 6)
+            .store_slice(owner_address)
+            .store_coins(withdraw_amount)
+            .store_uint(0, 1 + 4 + 4 + 64 + 32 + 1 + 1);
+        send_raw_message(msg.end_cell(), 1);
+        return ();
+    }
+    
+    throw(0xffff); ;; Unknown operation
+}
+
+;; Get methods for querying contract state
+
+;; Get total supply
+int get_total_supply() method_id {
+    (int total_supply, slice owner_address, int price_nanoton, slice oracle_address, cell balances, int freeze_admin) = load_data();
+    return total_supply;
+}
+
+;; Get token balance of an address
+int get_balance_of(slice user_address) method_id {
+    (int total_supply, slice owner_address, int price_nanoton, slice oracle_address, cell balances, int freeze_admin) = load_data();
+    return get_balance(balances, user_address);
+}
+
+;; Get current token price in nanotons
+int get_price() method_id {
+    (int total_supply, slice owner_address, int price_nanoton, slice oracle_address, cell balances, int freeze_admin) = load_data();
+    return price_nanoton;
+}
+
+;; Get owner address
+slice get_owner() method_id {
+    (int total_supply, slice owner_address, int price_nanoton, slice oracle_address, cell balances, int freeze_admin) = load_data();
+    return owner_address;
+}
+
+;; Get oracle address
+slice get_oracle() method_id {
+    (int total_supply, slice owner_address, int price_nanoton, slice oracle_address, cell balances, int freeze_admin) = load_data();
+    return oracle_address;
+}
+
+;; Check if transfers are frozen
+int get_freeze_status() method_id {
+    (int total_supply, slice owner_address, int price_nanoton, slice oracle_address, cell balances, int freeze_admin) = load_data();
+    return freeze_admin;
+}
+
+;; Calculate how many tokens can be bought with given TON amount
+int calculate_tokens_for_ton(int ton_amount) method_id {
+    (int total_supply, slice owner_address, int price_nanoton, slice oracle_address, cell balances, int freeze_admin) = load_data();
+    return (ton_amount * NANOTONS_PER_TON) / price_nanoton;
+}
+
+;; Calculate how much TON is needed for given token amount
+int calculate_ton_for_tokens(int token_amount) method_id {
+    (int total_supply, slice owner_address, int price_nanoton, slice oracle_address, cell balances, int freeze_admin) = load_data();
+    return (token_amount * price_nanoton) / NANOTONS_PER_TON;
+}
