@@ -10,7 +10,12 @@
     "deploy-ton": "node scripts/deploy.js"
   },
   "dependencies": {
-    "ethers": "^5.7.2"
+    "ethers": "^6.15.0",
+    "express": "^5.1.0",
+    "lodash": "^4.17.21"
+  },
+  "devDependencies": {
+    "gulp": "^5.0.1"
   },
   "devDependencies": {},
   "author": "Sonny Quinn",
